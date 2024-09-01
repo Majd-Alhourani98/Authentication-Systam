@@ -42,7 +42,7 @@ const User = mongoose.model('User', userSchema);
 module.exports = User;
 
 /* 
-* User Schema Explanation:
+! User Schema Explanation:
   - name: This field is a string representing the user's name. It is marked as required, 
     so the user must provide a name when creating a document. If not provided, 
     a custom error message "Please tell us your name!" will be displayed.
