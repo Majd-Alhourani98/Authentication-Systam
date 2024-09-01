@@ -6,7 +6,10 @@ const handleDuplicateFieldsDB = (err, res) => {
   // If we handle the error for a specific field like email: return new AppError(`${err.keyValue.email}`, 400);
 
   // The following line works for any duplicate field error by using the first value in the key-value pair:
-  return new AppError(`${Object.values(err.keyValue)[0]}`, 404);
+  return new AppError(
+    `${Object.keys(err.keyValue)[0]} ${Object.values(err.keyValue)[0]} already exist`,
+    404
+  );
 };
 
 // Handle Cast Errors in MongoDB
