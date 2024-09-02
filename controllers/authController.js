@@ -8,6 +8,26 @@ const User = require('./../models/userModel');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/AppError');
 
+const sendTokenResponse = (user, statusCode, res) => {
+  const token = user.generateToken();
+
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: { user },
+  });
+};
+
+const filterData = (data, ...allowedFields) => {
+  const obj = {};
+
+  Object.keys(data).forEach(el => {
+    if (allowedFields.includes(el)) obj[el] = data[el];
+  });
+
+  return obj;
+};
+
 // Signup handler
 const signup = catchAsync(async (req, res, next) => {
   // Destructure request body for better readability
@@ -21,18 +41,10 @@ const signup = catchAsync(async (req, res, next) => {
     return next(new AppError('User creation failed', 500));
   }
 
-  // Generate a new JWT token for the user
-  const token = user.generateToken();
-
   // Remove sensitive data (password) from the response
   user.password = undefined;
 
-  // Send a repsonse with a token and user data to the client
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: { user },
-  });
+  sendTokenResponse(user, 201, res);
 });
 
 // Login handler
@@ -46,16 +58,12 @@ const login = catchAsync(async (req, res, next) => {
 
   // 2) Check if the user exist && password is correct
   const user = await User.findOne({ email }).select('+password');
-  const isCorrectPassword = await user.isCorrectPassword(password);
-  if (!user || !isCorrectPassword) return next(new AppError('Incorrect email or password', 401));
+
+  if (!user || !(await user.isCorrectPassword(password)))
+    return next(new AppError('Incorrect email or password', 401));
 
   // 3) Send a repsonse with a token to the client
-  const token = user.generateToken();
-
-  res.status(200).json({
-    status: 'success',
-    token,
-  });
+  sendTokenResponse(user, 200, res);
 });
 
 // Protect Middleware
@@ -134,12 +142,12 @@ const forgotPassword = catchAsync(async (req, res, next) => {
 // Reset Token
 const resetPassowrd = catchAsync(async (req, res, next) => {
   //  1) Get User based on the token
-  let { resettoken } = req.params;
+  let { resetToken } = req.params;
   const { password, passwordConfirm } = req.body;
 
-  resettoken = crypto.createHash('sha256').update(resettoken).digest('hex');
+  resetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
   const user = await User.findOne({
-    passwordResetToken: resettoken,
+    passwordResetToken: resetToken,
     passwordResetTokenExpires: { $gte: Date.now() },
   });
 
@@ -154,17 +162,60 @@ const resetPassowrd = catchAsync(async (req, res, next) => {
 
   // 3) Update the changedPasswordAt property for the user. use pre save middleware :)
 
+  user.password = undefined;
+  user.passwordChangedAt = undefined;
   // 4) Log the user in, Send JWT
-  const token = user.generateToken();
+  sendTokenResponse(user, 200, res);
+});
 
-  res.status(200).send('ds');
+const updatePassword = catchAsync(async (req, res, next) => {
+  const { oldPassword, newPassword, passwordConfirm } = req.body;
+
+  // Get use ftom collection
+  const user = await User.findById(req.user._id).select('+password');
+
+  // Check if posted old password is correct
+  if (!(await user.isCorrectPassword(oldPassword))) {
+    return next(new AppError('Your current password is wrong.', 401));
+  }
+
+  // update password
+  user.password = newPassword;
+  user.passwordConfirm = passwordConfirm;
+  await user.save();
+
+  sendTokenResponse(user, 200, res);
+});
+
+const updateMe = catchAsync(async (req, res, next) => {
+  // 1) create error if user Post password data
+  if (req.body.password || req.body.passwordConfirm) {
+    return next(
+      new AppError('This route is not for password updates. Please use /update-passowrd')
+    );
+  }
+
+  const filteredData = filterData(req.body, 'name', 'email');
+
+  // 2) Update user document
+  const user = await User.findByIdAndUpdate(req.user.id, filteredData, {
+    new: true,
+    runValidators: true,
+  });
+
+  // 2) Update user document
+  res.status(200).json({
+    status: 'success',
+  });
 });
 
 module.exports = {
-  signup,
   login,
+  signup,
   protect,
+  updateMe,
   restrictTo,
-  forgotPassword,
   resetPassowrd,
+  forgotPassword,
+  updatePassword,
 };
