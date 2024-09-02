@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a password'],
     minLength: 8,
-    select: false, // to omit the password from the output when we retrive the data.
+    select: false, // to omit the password from the output when we retrive the data. but when we creat a new document it be in the output
   },
 
   passwordConfirm: {
@@ -38,6 +38,8 @@ const userSchema = new mongoose.Schema({
       message: 'Passwords are not the same',
     },
   },
+
+  passwordChangedAt: Date,
 });
 
 // Pre-save middleware to encrypt the password
@@ -55,6 +57,19 @@ userSchema.methods.generateToken = function () {
   return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
+};
+
+// an instance method to checks the passwords
+userSchema.methods.isCorrectPassword = async function (plainPassword) {
+  return await bcrypt.compare(plainPassword, this.password);
+};
+
+// an instance method to check if the user change his password after the the token is issued
+userSchema.methods.isPasswordChangedAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt)
+    return parseInt(this.passwordChangedAt.getTime() / 1000, 10) > JWTTimestamp;
+
+  return false;
 };
 
 // Create and export the User model
@@ -115,4 +130,7 @@ module.exports = User;
 - In Mongoose, userSchema.methods.<functionName> is a method added to the schema that can be called on any instance (document) of the model created from that schema.
 
 - Inside an instance method in Mongoose, the this keyword refers to the current document (instance) on which the method is being called.
+
+
+- select: false; This prevents the password from being included in the output when retrieving data. However, the password will be included when creating a new document.
 */
