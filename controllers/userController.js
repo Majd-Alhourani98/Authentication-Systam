@@ -2,9 +2,7 @@ const User = require('./../models/userModel');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/AppError');
 
-// these controller are private for the admin use only
-
-// Get All users: Retrieves all users from the database using User.find() and returns them in the response.
+// Get All users
 const getUsers = catchAsync(async (req, res, next) => {
   const users = await User.find();
 
@@ -15,7 +13,7 @@ const getUsers = catchAsync(async (req, res, next) => {
   });
 });
 
-// Get User: Retrieves a user by their ID using User.findById(id). If no user is found, an error is thrown using AppError.
+// Get User
 const getUser = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const user = await User.findById(id);
@@ -29,7 +27,7 @@ const getUser = catchAsync(async (req, res, next) => {
   });
 });
 
-// Create User: Creates a new user in the database with data from req.body using User.create().
+// Create User
 const createUser = catchAsync(async (req, res, next) => {
   const user = await User.create(req.body);
 
@@ -39,8 +37,7 @@ const createUser = catchAsync(async (req, res, next) => {
   });
 });
 
-// Update User: Updates an existing user by ID using User.findByIdAndUpdate(). Takes the user ID and updated data, and options { new: true, runValidators: true } to return the updated document and run schema validators.
-// If no user is found, an error is thrown using AppError.
+// Update User
 const updateUser = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const user = await User.findByIdAndUpdate(id, req.body, {
@@ -57,8 +54,7 @@ const updateUser = catchAsync(async (req, res, next) => {
   });
 });
 
-// Delete User: Deletes a user by ID using User.findByIdAndDelete().
-// If no user is found, an error is thrown using AppError.
+// Delete User
 const deleteUser = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const user = await User.findByIdAndDelete(id);
