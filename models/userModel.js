@@ -40,6 +40,7 @@ const userSchema = new mongoose.Schema({
     },
   },
 
+  passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetTokenExpires: Date,
 });
@@ -50,6 +51,15 @@ userSchema.pre('save', async function (next) {
 
   this.password = await bcrypt.hash(this.password, 10); // Hash the password
   this.passwordConfirm = undefined; // Remove the password confirmation field
+
+  next();
+});
+
+// A pre save middleware to update the passwordChangedAt field
+userSchema.pre('save', function (next) {
+  // Note: when we create a new document we modify the document.
+  if (!this.isModified('password') || this.isNew) return next();
+  this.passwordChangedAt = Date.now();
 
   next();
 });
