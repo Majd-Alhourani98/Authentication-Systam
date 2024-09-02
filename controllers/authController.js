@@ -10,7 +10,7 @@ const signup = catchAsync(async (req, res, next) => {
   const { name, email, password, passwordConfirm } = req.body;
 
   // Create a new user in the database
-  const user = await User.create(req.body);
+  const user = await User.create({ name, email, password, passwordConfirm });
 
   // Handle potential user creation errors
   if (!user) {
@@ -79,7 +79,14 @@ const protect = catchAsync(async (req, res, next) => {
   next();
 });
 
-const restrictTo = catchAsync(async (req, res, next) => {});
+const restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role))
+      return next(new AppError(`You do not have permission to perform this action`, 403));
+
+    next();
+  };
+};
 
 const forgotPassword = catchAsync(async (req, res, next) => {});
 const resetPassowrd = catchAsync(async (req, res, next) => {});
