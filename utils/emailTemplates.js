@@ -38,4 +38,43 @@ const verificationEmailTemplate = `
 
 `;
 
-module.exports = { verificationEmailTemplate };
+const welcomeEmailTemplate = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Our Service</title>
+</head>
+<body style="background-color: #f9f9f9; padding: 20px; margin: 0;">
+  <table align="center" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; border: 1px solid #dddddd; border-radius: 8px; background-color: #ffffff; margin: 0 auto;">
+    <tr>
+      <td style="padding: 20px;">
+        <h2 style="color: #333333; font-size: 24px; margin: 0;">Welcome to Our Service!</h2>
+        <p style="font-size: 16px; color: #555555; line-height: 24px; margin: 16px 0;">
+          Hi {{USER_NAME}},
+          <br><br>
+          Thank you for joining us! We're thrilled to have you as part of our community. Our team is dedicated to providing you with the best experience possible, and we are here to support you every step of the way.
+        </p>
+        <p style="font-size: 16px; color: #555555; line-height: 24px; margin: 16px 0;">
+          To get started, you can explore the following:
+        </p>
+        <ul style="font-size: 16px; color: #555555; line-height: 24px; margin: 16px 0; padding-left: 20px;">
+          <li>Visit our <a href="{{DASHBOARD_URL}}" style="color: #1a73e8; text-decoration: none;">dashboard</a> to access your account features.</li>
+          <li>Check out our <a href="{{HELP_CENTER_URL}}" style="color: #1a73e8; text-decoration: none;">Help Center</a> for guides and support.</li>
+          <li>Stay updated with our <a href="{{BLOG_URL}}" style="color: #1a73e8; text-decoration: none;">blog</a> for the latest news and tips.</li>
+        </ul>
+        <p style="font-size: 16px; color: #555555; line-height: 24px; margin: 16px 0;">
+          If you have any questions or need assistance, feel free to reach out to our support team at <a href="mailto:support@example.com" style="color: #1a73e8; text-decoration: none;">support@example.com</a>.
+        </p>
+        <p style="font-size: 14px; color: #888888; margin-top: 30px; line-height: 20px;">
+          Best regards,
+          <br>
+          The [Your Company Name] Team
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+module.exports = { verificationEmailTemplate, welcomeEmailTemplate };

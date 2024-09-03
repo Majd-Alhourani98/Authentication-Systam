@@ -55,18 +55,39 @@ const signup = catchAsync(async (req, res, next) => {
   generateTokenAndSetCookie(res, user._id);
 
   // send verification email
-  try {
-    await sendEmail({
-      email: user.email,
-      subject: 'Email Verification',
-      verificationToken,
-    });
-  } catch (err) {
-    console.log(err);
-  }
+
+  await sendEmail.sendVerificationEmail(user.email, verificationToken);
+
   res.status(201).json({
     status: 'success',
     message: 'user created successfully',
+    data: { user },
+  });
+});
+
+// Verifiy email
+const verifyEamil = catchAsync(async (req, res, next) => {
+  const { code } = req.body;
+
+  const user = await User.findOne({
+    verificationToken: code,
+    verificationTokenExpiresAt: { $gte: Date.now() },
+  });
+
+  if (!user) return next(new AppError('Invalid or expired verification code'));
+
+  user.isVerified = true;
+  user.verificationToken = undefined;
+  user.verificationTokenExpiresAt = undefined;
+  await user.save({ validateModifiedOnly: true });
+
+  await sendEmail.sendWelcomeEmail(user.email, user.name);
+
+  user.password = undefined;
+
+  res.status(200).json({
+    statuts: 'success',
+    message: 'Email verified successfully',
     data: { user },
   });
 });
@@ -255,4 +276,5 @@ module.exports = {
   forgotPassword,
   updatePassword,
   deleteMe,
+  verifyEamil,
 };

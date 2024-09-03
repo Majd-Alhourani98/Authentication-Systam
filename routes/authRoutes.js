@@ -7,6 +7,7 @@ const {
   updatePassword,
   updateMe,
   deleteMe,
+  verifyEamil,
 } = require('./../controllers/authController');
 
 const { protect } = require('./../controllers/authController');
@@ -14,6 +15,7 @@ const { protect } = require('./../controllers/authController');
 const router = express.Router();
 
 router.post('/signup', signup);
+router.post('/verify-email', verifyEamil);
 router.post('/login', login);
 router.post('/forgot-password', forgotPassword);
 router.patch('/reset-password/:resetToken', resetPassowrd);
