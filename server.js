@@ -6,7 +6,7 @@ const app = require('./app');
 // Load Environment Variables
 dotenv.config();
 
-// Datebase connection
+// Datebase Connection
 mongoose
   .connect(process.env.DATABASE_URL)
   .then(conn => console.log('CONNECTED TO DATABASE'))

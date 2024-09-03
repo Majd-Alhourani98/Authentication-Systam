@@ -25,7 +25,6 @@ app.use(express.json());
 // Routers Middlewares
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
-app.use('/', viewsRouter);
 
 // Handle unhandled routes
 app.all('*', (req, res, next) => {
