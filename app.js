@@ -9,7 +9,6 @@ const AppError = require('./utils/AppError');
 // Import Routers
 const authRouter = require('./routes/authRoutes');
 const userRouter = require('./routes/userRoutes');
-const viewsRouter = require('./routes/viewsRoutes');
 
 const app = express();
 
