@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { select } = require('underscore');
 
 // Define the User Schema
 const userSchema = new mongoose.Schema({
@@ -46,6 +47,12 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin'],
   },
 
+  active: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
+
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetTokenExpires: Date,
@@ -67,6 +74,12 @@ userSchema.pre('save', function (next) {
   if (!this.isModified('password') || this.isNew) return next();
   this.passwordChangedAt = Date.now();
 
+  next();
+});
+
+// Remove inActive user from the output
+userSchema.pre(/^find/, function (next) {
+  this.find({ active: { $ne: false } });
   next();
 });
 

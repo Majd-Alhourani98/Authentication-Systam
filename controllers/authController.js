@@ -10,7 +10,9 @@ const AppError = require('./../utils/AppError');
 
 const sendTokenResponse = (user, statusCode, res) => {
   const token = user.generateToken();
+  console.log(token);
 
+  res.header('authorization', `Bearer ${token}`);
   res.status(statusCode).json({
     status: 'success',
     token,
@@ -43,6 +45,7 @@ const signup = catchAsync(async (req, res, next) => {
 
   // Remove sensitive data (password) from the response
   user.password = undefined;
+  user.active = undefined;
 
   sendTokenResponse(user, 201, res);
 });
@@ -168,6 +171,7 @@ const resetPassowrd = catchAsync(async (req, res, next) => {
   sendTokenResponse(user, 200, res);
 });
 
+// Update Passwords
 const updatePassword = catchAsync(async (req, res, next) => {
   const { oldPassword, newPassword, passwordConfirm } = req.body;
 
@@ -187,6 +191,7 @@ const updatePassword = catchAsync(async (req, res, next) => {
   sendTokenResponse(user, 200, res);
 });
 
+// Update data
 const updateMe = catchAsync(async (req, res, next) => {
   // 1) create error if user Post password data
   if (req.body.password || req.body.passwordConfirm) {
@@ -209,6 +214,41 @@ const updateMe = catchAsync(async (req, res, next) => {
   });
 });
 
+// Delete me
+const deleteMe = catchAsync(async (req, res, next) => {
+  await User.findByIdAndUpdate(req.user.id, { active: false });
+
+  res.status(204).json({
+    status: 'success',
+    data: null,
+  });
+});
+
+const isLoggedIn = catchAsync(async (req, res, next) => {
+  // 1) Get the token and check if it exist
+  let token;
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (!token) return next();
+
+  // 2) Verify the token
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+  // 3) Check if the user still exists
+  const user = await User.findById(decoded.id);
+  if (!user) return next();
+
+  // 4) Check if user changed password after the JWT was issued
+  if (user.isPasswordChangedAfter(decoded.iat)) return next();
+
+  // Grant access to protected route
+  res.locals.user = user;
+  req.user = user;
+  next();
+});
+
 module.exports = {
   login,
   signup,
@@ -218,4 +258,6 @@ module.exports = {
   resetPassowrd,
   forgotPassword,
   updatePassword,
+  deleteMe,
+  isLoggedIn,
 };
