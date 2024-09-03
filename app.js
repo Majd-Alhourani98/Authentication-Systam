@@ -1,6 +1,8 @@
 const path = require('path');
 const express = require('express');
+
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 // Erorr Handling
 const errorHandler = require('./middlewares/errorHandler');
@@ -13,9 +15,13 @@ const morgan = require('morgan');
 
 const app = express();
 
+// Set security HTTP headers
+app.use(helmet());
+
 // Logging During development
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
+// Limit requests from same API
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 100,
@@ -31,7 +37,7 @@ app.set('view engine', 'pug');
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Prase JSON body
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 
 // Routers Middlewares
 app.use('/api/v1/auth', authRouter);
