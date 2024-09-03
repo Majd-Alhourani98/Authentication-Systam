@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-
+const { verificationEmailTemplate } = require('./emailTemplates');
 const sendEmail = async options => {
   // 1) Create a transporter
   const transporter = nodemailer.createTransport({
@@ -16,7 +16,9 @@ const sendEmail = async options => {
     from: 'Majd Alhourani <majd.aldein.alhourani@gmail.com>',
     to: options.email,
     subject: options.subject,
-    text: options.message,
+    // text: options.message,
+    category: 'Email Verification',
+    html: verificationEmailTemplate.replace('{{VERIFICATION_CODE}}', options.verificationToken),
   };
 
   // 3) ACTAULLY send the email
@@ -28,3 +30,5 @@ module.exports = sendEmail;
 // Transporter: is a service that will send the email becuase not Node.js that will send the email, a service such as gmail or mailtrap
 
 // To use gmail: Activate `less secure app` option
+
+// {{VERIFICATION_CODE}}

@@ -7,26 +7,8 @@ const sendEmail = require('./../utils/email');
 const User = require('./../models/userModel');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/AppError');
-
-const sendTokenResponse = (user, statusCode, res) => {
-  const token = user.generateToken();
-
-  const cookieOptions = {
-    expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000,
-    httpOnly: true,
-  };
-
-  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
-  // Send the token via HTTP request's Header
-  // res.header('authorization', `Bearer ${token}`);
-
-  res.cookie('jwt', token);
-  res.status(statusCode).json({
-    status: 'success',
-    token,
-    data: { user },
-  });
-};
+const generateVerificationCode = require('./../utils/generateVerificationCode');
+const generateTokenAndSetCookie = require('./../utils/generateTokenAndSetCookie');
 
 const filterData = (data, ...allowedFields) => {
   const obj = {};
@@ -43,8 +25,22 @@ const signup = catchAsync(async (req, res, next) => {
   // Destructure request body for better readability
   const { name, email, password, passwordConfirm } = req.body;
 
+  // check if the email already exist
+  const isUserExist = await User.findOne({ email });
+  if (isUserExist) return next(new AppError('User already exist', 400));
+
+  // Create verification Token
+  const verificationToken = generateVerificationCode();
+
   // Create a new user in the database
-  const user = await User.create({ name, email, password, passwordConfirm });
+  const user = await User.create({
+    name,
+    email,
+    password,
+    passwordConfirm,
+    verificationToken,
+    verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
+  });
 
   // Handle potential user creation errors
   if (!user) {
@@ -55,7 +51,24 @@ const signup = catchAsync(async (req, res, next) => {
   user.password = undefined;
   user.active = undefined;
 
-  sendTokenResponse(user, 201, res);
+  // generate token and set the cookie
+  generateTokenAndSetCookie(res, user._id);
+
+  // send verification email
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Email Verification',
+      verificationToken,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+  res.status(201).json({
+    status: 'success',
+    message: 'user created successfully',
+    data: { user },
+  });
 });
 
 // Login handler
@@ -143,7 +156,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
     });
   } catch (error) {
     user.passwordResetToken = undefined;
-    user.passwordResetTokenExpires = undefined;
+    user.passwordResetTokenExpiresAt = undefined;
     user.save({ validateBeforeSave: false });
 
     return next(new AppError('There wan an Error sending the email. Try again later'));
@@ -159,7 +172,7 @@ const resetPassowrd = catchAsync(async (req, res, next) => {
   resetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
   const user = await User.findOne({
     passwordResetToken: resetToken,
-    passwordResetTokenExpires: { $gte: Date.now() },
+    passwordResetTokenExpiresAt: { $gte: Date.now() },
   });
 
   if (!user) return next(new AppError('Token is invalid or has expired', 400));
@@ -168,7 +181,7 @@ const resetPassowrd = catchAsync(async (req, res, next) => {
   user.password = password;
   user.passwordConfirm = passwordConfirm;
   user.passwordResetToken = undefined;
-  user.passwordResetTokenExpires = undefined;
+  user.passwordResetTokenExpiresAt = undefined;
   await user.save();
 
   // 3) Update the changedPasswordAt property for the user. use pre save middleware :)

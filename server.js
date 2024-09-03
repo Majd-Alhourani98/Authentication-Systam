@@ -8,7 +8,7 @@ dotenv.config();
 
 // Datebase Connection
 mongoose
-  .connect(process.env.DATABASE_URL)
+  .connect(process.env.MONGO_URL)
   .then(conn => console.log('CONNECTED TO DATABASE'))
   .catch(err => console.log('NOT CONNTECTED TO DATABASE', err));
 

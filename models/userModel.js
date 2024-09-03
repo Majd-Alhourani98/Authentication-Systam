@@ -3,60 +3,79 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { select } = require('underscore');
 
 // Define the User Schema
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please tell us your name!'],
-  },
-
-  email: {
-    type: String,
-    required: [true, 'Please provide your email'],
-    unique: true,
-    lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valid email'],
-  },
-
-  photo: String, // Optional field for user photo
-
-  password: {
-    type: String,
-    required: [true, 'Please provide a password'],
-    minLength: 8,
-    select: false, // to omit the password from the output when we retrive the data. but when we creat a new document it be in the output
-  },
-
-  passwordConfirm: {
-    type: String,
-    required: [true, 'Please confirm your password'],
-    validate: {
-      validator: function (value) {
-        return value === this.password;
-      },
-      message: 'Passwords are not the same',
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'Please tell us your name!'],
     },
-  },
 
-  role: {
-    type: String,
-    default: 'user',
-    enum: ['user', 'admin'],
-  },
+    email: {
+      type: String,
+      required: [true, 'Please provide your email'],
+      unique: true,
+      lowercase: true,
+      validate: [validator.isEmail, 'Please provide a valid email'],
+    },
 
-  active: {
-    type: Boolean,
-    default: true,
-    select: false,
-  },
+    photo: String, // Optional field for user photo
 
-  passwordChangedAt: Date,
-  passwordResetToken: String,
-  passwordResetTokenExpires: Date,
-});
+    password: {
+      type: String,
+      required: [true, 'Please provide a password'],
+      minLength: 8,
+      select: false, // to omit the password from the output when we retrive the data. but when we creat a new document it be in the output
+    },
+
+    passwordConfirm: {
+      type: String,
+      required: [true, 'Please confirm your password'],
+      validate: {
+        validator: function (value) {
+          return value === this.password;
+        },
+        message: 'Passwords are not the same',
+      },
+    },
+
+    role: {
+      type: String,
+      default: 'user',
+      enum: ['user', 'admin'],
+    },
+
+    active: {
+      type: Boolean,
+      default: true,
+      select: false,
+    },
+
+    lastLoginAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    passwordChangedAt: Date,
+
+    // password reset token fields
+    passwordResetToken: String,
+    passwordResetTokenExpiresAt: Date,
+
+    // Verify accounts fields
+    verificationToken: String,
+    verificationTokenExpiresAt: Date,
+  },
+  {
+    timestamps: true,
+  }
+);
 
 // Pre-save middleware to encrypt the password
 userSchema.pre('save', async function (next) {
@@ -84,11 +103,11 @@ userSchema.pre(/^find/, function (next) {
 });
 
 // an instance method to Sign a token
-userSchema.methods.generateToken = function () {
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
-  });
-};
+// userSchema.methods.generateToken = function () {
+//   return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+//     expiresIn: process.env.JWT_EXPIRES_IN,
+//   });
+// };
 
 // an instance method to checks the passwords
 userSchema.methods.isCorrectPassword = async function (plainPassword) {
@@ -114,7 +133,7 @@ userSchema.methods.generatePasswordResetToken = function () {
 
   // save the token and the expiry date of that token in the database
   this.passwordResetToken = hashedPasswordResetToken;
-  this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000;
+  this.passwordResetTokenExpiresAt = Date.now() + 10 * 60 * 1000;
 
   return resetToken;
 };
@@ -122,3 +141,5 @@ userSchema.methods.generatePasswordResetToken = function () {
 // Create and export the User model
 const User = mongoose.model('User', userSchema);
 module.exports = User;
+
+// timestamps: true: createdat and updatedat fields will be automatically added into the document
