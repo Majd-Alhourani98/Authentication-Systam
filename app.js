@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
+const hpp = require('hpp');
 
 // Erorr Handling
 const errorHandler = require('./middlewares/errorHandler');
@@ -15,6 +16,7 @@ const authRouter = require('./routes/authRoutes');
 const userRouter = require('./routes/userRoutes');
 const morgan = require('morgan');
 const { login } = require('./controllers/authController');
+const { whitelist } = require('validator');
 
 const app = express();
 
@@ -55,6 +57,18 @@ app.use(mongoSanitize());
 // Data snaitization against XSS
 app.use(xss());
 
+// Prevent Parameter Polution
+app.use({
+  whitelist: [
+    'price',
+    'duration',
+    'ratingsQuantity',
+    'ratingsAverage',
+    'maxGroupSize',
+    'difficulty',
+  ],
+});
+
 // Routers Middlewares
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
@@ -71,3 +85,5 @@ module.exports = app;
 
 // Data snaitization against NoSQL query injection Example:
 // login: { "email": {$gte: ""}, "password": "pass12345"}
+
+// Parameter Pollution

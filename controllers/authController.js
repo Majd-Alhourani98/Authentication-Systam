@@ -39,12 +39,12 @@ const signup = catchAsync(async (req, res, next) => {
     password,
     passwordConfirm,
     verificationToken,
-    verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, //24 hours
   });
 
   // Handle potential user creation errors
   if (!user) {
-    return next(new AppError('User creation failed', 500));
+    return next(new AppError('Failed to create user. Please try again later.', 500));
   }
 
   // Remove sensitive data (password) from the response
@@ -60,7 +60,7 @@ const signup = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     status: 'success',
-    message: 'user created successfully',
+    message: 'User created successfully. Please check your email to verify your account.',
     data: { user },
   });
 });
@@ -266,6 +266,11 @@ const deleteMe = catchAsync(async (req, res, next) => {
   });
 });
 
+const logout = catchAsync(async (req, res, next) => {
+  res.clearCookie('token');
+  res.status(200).json({ status: 'success', message: 'Looged out successfully' });
+});
+
 module.exports = {
   login,
   signup,
@@ -277,4 +282,5 @@ module.exports = {
   updatePassword,
   deleteMe,
   verifyEamil,
+  logout,
 };
